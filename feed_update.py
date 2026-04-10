@@ -80,10 +80,8 @@ for cat in root.findall('.//category'):
 # 📅 дата акции
 # =========================
 now = datetime.now()
-sale_date = now.replace(hour=23, minute=59, second=59, microsecond=0)
-
-if now > sale_date:
-    sale_date += timedelta(days=1)
+# всегда "завтра в 02:55"
+sale_date = (now + timedelta(days=1)).replace(hour=2, minute=55, second=0, microsecond=0)
 
 sale_date_str = sale_date.strftime("%Y-%m-%d %H:%M:%S")
 
