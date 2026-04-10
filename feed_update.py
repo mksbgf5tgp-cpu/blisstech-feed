@@ -63,6 +63,7 @@ if response.status_code != 200:
     print("❌ Ошибка загрузки XML")
     exit()
 
+# 🔥 ИСПРАВЛЕНО: убрали recover=True
 parser = etree.XMLParser()
 root = etree.fromstring(response.content, parser)
 
@@ -102,6 +103,14 @@ def apply_markup(price):
         return price
 
 # =========================
+# 🧹 FIX CDATA / TEXT
+# =========================
+def safe_text(node):
+    if node is None:
+        return ""
+    return "".join(node.itertext()).replace("]]>", "").strip()
+
+# =========================
 # 📦 ТОВАРЫ
 # =========================
 products = []
@@ -139,7 +148,7 @@ for offer in root.findall('.//offer'):
             base_price = 0
 
         final_price = apply_markup(base_price)
-        final_price = int(final_price) + 0.99  # психологическая цена
+        final_price = int(final_price) + 0.99
         old_price = final_price * random.uniform(1.3, 1.6)
 
         product = {
@@ -160,8 +169,8 @@ for offer in root.findall('.//offer'):
                     "ru": name.text.strip()
                 },
                 "description": {
-                    "ua": description.text.strip() if description is not None and description.text else "",
-                    "ru": description.text.strip() if description is not None and description.text else ""
+                    "ua": safe_text(description),
+                    "ru": safe_text(description)
                 },
                 "brand": brand.text if brand is not None and brand.text else "",
                 "currency": "UAH",
@@ -183,7 +192,7 @@ print(f"📦 Всего товаров: {len(products)}")
 # 🚀 ОТПРАВКА
 # =========================
 API_URL = "https://blisstech.shop/api/catalog/import/"
-BATCH_SIZE = 100
+BATCH_SIZE = 300
 
 for i in range(0, len(products), BATCH_SIZE):
     batch = products[i:i + BATCH_SIZE]
