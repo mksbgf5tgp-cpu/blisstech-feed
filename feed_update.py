@@ -15,7 +15,9 @@ auth_response = requests.post(
     }
 )
 
-token = auth_response.json().get("token")
+data = auth_response.json()
+
+token = data.get("response", {}).get("token")
 
 if not token:
     print("❌ Ошибка авторизации")
