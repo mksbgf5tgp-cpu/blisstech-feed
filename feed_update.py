@@ -98,23 +98,21 @@ def apply_markup(price):
         return price
 
 # =========================
-# 🧠 1:1 XML TEXT (КЛЮЧЕВОЙ ФИКС)
+# 🧠 1:1 HTML ИЗ XML (ГЛАВНЫЙ ФИКС)
 # =========================
-def safe_text(node):
+def get_html_from_xml(node):
     if node is None:
         return ""
 
-    # получаем XML как строку
-    raw = etree.tostring(node, encoding="unicode", method="xml")
+    # если есть вложенные элементы → сохраняем HTML структуру
+    if len(node):
+        return "".join(
+            etree.tostring(child, encoding="unicode", method="xml")
+            for child in node
+        ).strip()
 
-    # вырезаем только контейнер <description>
-    start = raw.find(">")
-    end = raw.rfind("</")
-
-    if start != -1 and end != -1:
-        return raw[start + 1:end].strip()
-
-    return raw.strip()
+    # если просто текст
+    return node.text or ""
 
 # =========================
 # 📦 ТОВАРЫ
@@ -145,6 +143,7 @@ for offer in root.findall('.//offer'):
 
         parent_category = category_map.get(category_id.text, "Без категорії") if category_id is not None else "Без категорії"
 
+        # цена
         base_price = 0
         try:
             if price is not None and price.text:
@@ -166,6 +165,9 @@ for offer in root.findall('.//offer'):
         if is_available:
             product["countdown_end_time"] = sale_date_str
 
+        # =========================
+        # 🚀 ОСНОВНОЙ ФИКС (HTML 1:1)
+        # =========================
         if sku not in existing_articles:
             product.update({
                 "title": {
@@ -173,14 +175,14 @@ for offer in root.findall('.//offer'):
                     "ru": name.text.strip()
                 },
                 "description": {
-                    "ua": safe_text(description),
-                    "ru": safe_text(description)
+                    "ua": get_html_from_xml(description),
+                    "ru": get_html_from_xml(description)
                 },
                 "brand": brand.text if brand is not None and brand.text else "",
                 "currency": "UAH",
                 "parent": parent_category,
                 "images": {
-                    "links": [image.text] if image is not None and image.text else []
+                    "links": [image.text.strip()] if image is not None and image.text else []
                 }
             })
 
