@@ -192,7 +192,7 @@ print(f"📦 Всего товаров: {len(products)}")
 # 🚀 ОТПРАВКА
 # =========================
 API_URL = "https://blisstech.shop/api/catalog/import/"
-BATCH_SIZE = 300
+BATCH_SIZE = 700
 
 for i in range(0, len(products), BATCH_SIZE):
     batch = products[i:i + BATCH_SIZE]
