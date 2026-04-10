@@ -61,7 +61,7 @@ for offer in root.findall('.//offer'):
 
         sku = sku.text.strip()
 
-        presence = "у наявності" if available == "true" else "немає в наявності"
+presence = "available" if available == "true" else "not_available"
 
         countdown_text = f"Залишилось товарів по акції: {random.randint(8, 20)}"
 
