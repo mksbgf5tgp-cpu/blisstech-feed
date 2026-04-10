@@ -105,39 +105,40 @@ for offer in root.findall('.//offer'):
         category_id = offer.find('categoryId')
         available = offer.get('available')
 
-        if sku is None or name is None:
+        # =========================
+        # 🔒 базовые проверки
+        # =========================
+        if sku is None or not sku.text:
+            continue
+        if name is None or not name.text:
             continue
 
         sku = sku.text.strip()
-        is_new = sku not in existing_articles
 
+        is_new = sku not in existing_articles
         is_available = str(available).lower() == "true"
         presence = "В наявності" if is_available else "Немає в наявності"
 
         # категория
-        if category_id is not None:
+        if category_id is not None and category_id.text:
             parent_category = category_map.get(category_id.text, "Без категорії")
         else:
             parent_category = "Без категорії"
 
-        product = {
-            "article": sku,
-            "presence": presence
-        }
-
-        # дата акции только для товаров в наличии
-        if is_available:
-            product["countdown_end_time"] = sale_date_str
-
-        # 🆕 новые товары
+        # =========================
+        # 🆕 НОВЫЙ ТОВАР (ПОЛНЫЙ)
+        # =========================
         if is_new:
             base_price = float(price.text) if price is not None and price.text else 0
             old_price = base_price * random.uniform(1.3, 1.6)
 
-            image_url = image.text if image is not None else ""
-            desc_text = description.text if description is not None else ""
+            image_url = image.text if image is not None and image.text else ""
+            desc_text = description.text if description is not None and description.text else ""
 
-            product.update({
+            product = {
+                "article": sku,
+                "presence": presence,
+                "countdown_end_time": sale_date_str if is_available else None,
                 "title": {
                     "ua": name.text.strip(),
                     "ru": name.text.strip()
@@ -148,22 +149,35 @@ for offer in root.findall('.//offer'):
                 },
                 "price": round(base_price, 2),
                 "price_old": round(old_price, 2),
-                "brand": brand.text if brand is not None else "",
+                "brand": brand.text if brand is not None and brand.text else "",
                 "currency": "UAH",
                 "parent": parent_category,
                 "images": {
                     "links": [image_url] if image_url else []
                 }
-            })
+            }
+
+            # убираем None (важно для API)
+            if product.get("countdown_end_time") is None:
+                product.pop("countdown_end_time", None)
+
+        # =========================
+        # ♻️ СТАРЫЙ ТОВАР (ТОЛЬКО ОБНОВЛЕНИЕ)
+        # =========================
+        else:
+            product = {
+                "article": sku,
+                "presence": presence
+            }
+
+            if is_available:
+                product["countdown_end_time"] = sale_date_str
 
         products.append(product)
 
     except Exception as e:
         print("Ошибка товара:", e)
         continue
-
-print(f"📦 Всего на отправку: {len(products)}")
-
 # =========================
 # 🚀 ОТПРАВКА БАТЧАМИ
 # =========================
