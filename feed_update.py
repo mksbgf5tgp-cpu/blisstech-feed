@@ -57,29 +57,26 @@ print(f"📦 Уже есть товаров: {len(existing_articles)}")
 # =========================
 url = "https://opt-drop.com/storage/xml/opt-drop-20.xml"
 
-response = requests.get(url)
+response = requests.get(url, timeout=60)
 
 if response.status_code != 200:
     print("❌ Ошибка загрузки XML")
     exit()
 
-parser = etree.XMLParser(recover=True)
+parser = etree.XMLParser()
 root = etree.fromstring(response.content, parser)
 
 # =========================
-# 📂 категории из XML
+# 📂 категории
 # =========================
 category_map = {}
 
 for cat in root.findall('.//category'):
-    cat_id = cat.get('id')
-    cat_name = cat.text
-
-    if cat_id and cat_name:
-        category_map[cat_id] = cat_name.strip()
+    if cat.get('id') and cat.text:
+        category_map[cat.get('id')] = cat.text.strip()
 
 # =========================
-# дата акции
+# 📅 дата акции
 # =========================
 now = datetime.now()
 sale_date = now.replace(hour=23, minute=59, second=59, microsecond=0)
@@ -90,7 +87,22 @@ if now > sale_date:
 sale_date_str = sale_date.strftime("%Y-%m-%d %H:%M:%S")
 
 # =========================
-# товары
+# 💰 НАЦЕНКА
+# =========================
+def apply_markup(price):
+    if price <= 107:
+        return price * 1.347
+    elif price <= 166:
+        return price * 1.263
+    elif price <= 261:
+        return price * 1.179
+    elif price <= 356:
+        return price * 1.094
+    else:
+        return price
+
+# =========================
+# 📦 ТОВАРЫ
 # =========================
 products = []
 
@@ -98,16 +110,7 @@ for offer in root.findall('.//offer'):
     try:
         sku = offer.find('vendorCode')
         name = offer.find('name')
-        description = offer.find('description')
-        price = offer.find('price')
-        brand = offer.find('vendor')
-        image = offer.find('picture')
-        category_id = offer.find('categoryId')
-        available = offer.get('available')
 
-        # =========================
-        # 🔒 базовые проверки
-        # =========================
         if sku is None or not sku.text:
             continue
         if name is None or not name.text:
@@ -115,71 +118,69 @@ for offer in root.findall('.//offer'):
 
         sku = sku.text.strip()
 
-        is_new = sku not in existing_articles
+        price = offer.find('price')
+        description = offer.find('description')
+        brand = offer.find('vendor')
+        image = offer.find('picture')
+        category_id = offer.find('categoryId')
+        available = offer.get('available')
+
         is_available = str(available).lower() == "true"
         presence = "В наявності" if is_available else "Немає в наявності"
 
-        # категория
-        if category_id is not None and category_id.text:
-            parent_category = category_map.get(category_id.text, "Без категорії")
-        else:
-            parent_category = "Без категорії"
+        parent_category = category_map.get(category_id.text, "Без категорії") if category_id is not None else "Без категорії"
 
-        # =========================
-        # 🆕 НОВЫЙ ТОВАР (ПОЛНЫЙ)
-        # =========================
-        if is_new:
-            base_price = float(price.text) if price is not None and price.text else 0
-            old_price = base_price * random.uniform(1.3, 1.6)
+        # цена
+        base_price = 0
+        try:
+            if price is not None and price.text:
+                base_price = float(price.text.replace(",", "."))
+        except:
+            base_price = 0
 
-            image_url = image.text if image is not None and image.text else ""
-            desc_text = description.text if description is not None and description.text else ""
+        final_price = apply_markup(base_price)
+        final_price = int(final_price) + 0.99  # психологическая цена
+        old_price = final_price * random.uniform(1.3, 1.6)
 
-            product = {
-                "article": sku,
-                "presence": presence,
-                "countdown_end_time": sale_date_str if is_available else None,
+        product = {
+            "article": sku,
+            "presence": presence,
+            "price": round(final_price, 2),
+            "price_old": round(old_price, 2),
+        }
+
+        if is_available:
+            product["countdown_end_time"] = sale_date_str
+
+        # новые товары → добавляем всё
+        if sku not in existing_articles:
+            product.update({
                 "title": {
                     "ua": name.text.strip(),
                     "ru": name.text.strip()
                 },
                 "description": {
-                    "ua": desc_text,
-                    "ru": desc_text
+                    "ua": description.text.strip() if description is not None and description.text else "",
+                    "ru": description.text.strip() if description is not None and description.text else ""
                 },
-                "price": round(base_price, 2),
-                "price_old": round(old_price, 2),
                 "brand": brand.text if brand is not None and brand.text else "",
                 "currency": "UAH",
                 "parent": parent_category,
                 "images": {
-                    "links": [image_url] if image_url else []
+                    "links": [image.text] if image is not None and image.text else []
                 }
-            }
-
-            # убираем None (важно для API)
-            if product.get("countdown_end_time") is None:
-                product.pop("countdown_end_time", None)
-
-        # =========================
-        # ♻️ СТАРЫЙ ТОВАР (ТОЛЬКО ОБНОВЛЕНИЕ)
-        # =========================
-        else:
-            product = {
-                "article": sku,
-                "presence": presence
-            }
-
-            if is_available:
-                product["countdown_end_time"] = sale_date_str
+            })
 
         products.append(product)
 
     except Exception as e:
         print("Ошибка товара:", e)
         continue
+
+print(f"📦 Всего товаров: {len(products)}")
+
 # =========================
-# 🚀 ОТПРАВКА БАТЧАМИ
+# 🚀 ОТПРАВКА
 # =========================
 API_URL = "https://blisstech.shop/api/catalog/import/"
 BATCH_SIZE = 100
@@ -195,8 +196,7 @@ for i in range(0, len(products), BATCH_SIZE):
     try:
         response = requests.post(API_URL, json=payload, timeout=30)
 
-        print(f"📤 Отправка {i} - {i + len(batch)}")
-        print("STATUS:", response.status_code)
+        print(f"📤 {i} - {i + len(batch)} | {response.status_code}")
 
         try:
             print(response.json())
@@ -204,7 +204,7 @@ for i in range(0, len(products), BATCH_SIZE):
             print(response.text)
 
     except Exception as e:
-        print("❌ Ошибка отправки:", e)
+        print("❌ Ошибка:", e)
 
     time.sleep(1)
 
