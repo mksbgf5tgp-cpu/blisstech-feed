@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import random
 import os
 import time
+import re
 
 # =========================
 # 🔐 АВТОРИЗАЦИЯ
@@ -63,7 +64,6 @@ if response.status_code != 200:
     print("❌ Ошибка загрузки XML")
     exit()
 
-# 🔥 ИСПРАВЛЕНО: убрали recover=True
 parser = etree.XMLParser()
 root = etree.fromstring(response.content, parser)
 
@@ -80,9 +80,7 @@ for cat in root.findall('.//category'):
 # 📅 дата акции
 # =========================
 now = datetime.now()
-# всегда "завтра в 02:55"
 sale_date = (now + timedelta(days=1)).replace(hour=2, minute=55, second=0, microsecond=0)
-
 sale_date_str = sale_date.strftime("%Y-%m-%d %H:%M:%S")
 
 # =========================
@@ -101,12 +99,35 @@ def apply_markup(price):
         return price
 
 # =========================
-# 🧹 FIX CDATA / TEXT
+# 🧹 СТАБИЛЬНАЯ ОЧИСТКА ТЕКСТА (ВАЖНО)
+# сохраняет формат (переносы строк), но убирает мусор
+# =========================
+def clean_text(text):
+    if not text:
+        return ""
+
+    text = text.replace("]]>", "")
+    text = text.replace("\xa0", " ")
+
+    # нормализуем пробелы ПО СТРОКАМ (НЕ убиваем \n)
+    lines = text.splitlines()
+    cleaned_lines = []
+
+    for line in lines:
+        line = re.sub(r'[ \t]+', ' ', line).strip()
+        cleaned_lines.append(line)
+
+    return "\n".join([l for l in cleaned_lines if l])
+
+# =========================
+# 📦 safe_text (НЕ ЛОМАЕТ ФОРМАТ)
 # =========================
 def safe_text(node):
     if node is None:
         return ""
-    return "".join(node.itertext()).replace("]]>", "").strip()
+
+    text = "".join(node.itertext())
+    return clean_text(text)
 
 # =========================
 # 📦 ТОВАРЫ
@@ -137,7 +158,6 @@ for offer in root.findall('.//offer'):
 
         parent_category = category_map.get(category_id.text, "Без категорії") if category_id is not None else "Без категорії"
 
-        # цена
         base_price = 0
         try:
             if price is not None and price.text:
@@ -159,7 +179,6 @@ for offer in root.findall('.//offer'):
         if is_available:
             product["countdown_end_time"] = sale_date_str
 
-        # новые товары → добавляем всё
         if sku not in existing_articles:
             product.update({
                 "title": {
