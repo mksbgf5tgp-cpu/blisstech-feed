@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 import random
 import os
 import time
-import re
 
 # =========================
 # 🔐 АВТОРИЗАЦИЯ
@@ -99,35 +98,23 @@ def apply_markup(price):
         return price
 
 # =========================
-# 🧹 СТАБИЛЬНАЯ ОЧИСТКА ТЕКСТА (ВАЖНО)
-# сохраняет формат (переносы строк), но убирает мусор
-# =========================
-def clean_text(text):
-    if not text:
-        return ""
-
-    text = text.replace("]]>", "")
-    text = text.replace("\xa0", " ")
-
-    # нормализуем пробелы ПО СТРОКАМ (НЕ убиваем \n)
-    lines = text.splitlines()
-    cleaned_lines = []
-
-    for line in lines:
-        line = re.sub(r'[ \t]+', ' ', line).strip()
-        cleaned_lines.append(line)
-
-    return "\n".join([l for l in cleaned_lines if l])
-
-# =========================
-# 📦 safe_text (НЕ ЛОМАЕТ ФОРМАТ)
+# 🧠 1:1 XML TEXT (КЛЮЧЕВОЙ ФИКС)
 # =========================
 def safe_text(node):
     if node is None:
         return ""
 
-    text = "".join(node.itertext())
-    return clean_text(text)
+    # получаем XML как строку
+    raw = etree.tostring(node, encoding="unicode", method="xml")
+
+    # вырезаем только контейнер <description>
+    start = raw.find(">")
+    end = raw.rfind("</")
+
+    if start != -1 and end != -1:
+        return raw[start + 1:end].strip()
+
+    return raw.strip()
 
 # =========================
 # 📦 ТОВАРЫ
