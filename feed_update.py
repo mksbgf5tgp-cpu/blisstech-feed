@@ -16,7 +16,6 @@ auth_response = requests.post(
 )
 
 data = auth_response.json()
-
 token = data.get("response", {}).get("token")
 
 if not token:
@@ -32,6 +31,11 @@ print("✅ Авторизация ок")
 url = "https://opt-drop.com/storage/xml/opt-drop-20.xml"
 
 response = requests.get(url)
+
+if response.status_code != 200:
+    print("❌ Ошибка загрузки XML")
+    exit()
+
 parser = etree.XMLParser(recover=True)
 root = etree.fromstring(response.content, parser)
 
@@ -61,7 +65,8 @@ for offer in root.findall('.//offer'):
 
         sku = sku.text.strip()
 
-presence = "available" if available == "true" else "not_available"
+        # ✅ ПРАВИЛЬНО ДЛЯ ХОРОШОП
+        presence = "у наявності" if str(available).lower() == "true" else "немає в наявності"
 
         countdown_text = f"Залишилось товарів по акції: {random.randint(8, 20)}"
 
@@ -72,8 +77,11 @@ presence = "available" if available == "true" else "not_available"
             "countdown_description": countdown_text
         })
 
-    except:
+    except Exception as e:
+        print("Ошибка товара:", e)
         continue
+
+print(f"📦 Собрано товаров: {len(products)}")
 
 # =========================
 # 🚀 ОТПРАВКА В ХОРОШОП
