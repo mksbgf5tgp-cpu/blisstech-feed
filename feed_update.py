@@ -66,7 +66,7 @@ for offer in root.findall('.//offer'):
         sku = sku.text.strip()
 
         # ✅ ПРАВИЛЬНО ДЛЯ ХОРОШОП
-        presence = "у наявності" if str(available).lower() == "true" else "немає в наявності"
+        presence = "В наявності" if str(available).lower() == "true" else "Немає в наявності"
 
         countdown_text = f"Залишилось товарів по акції: {random.randint(8, 20)}"
 
