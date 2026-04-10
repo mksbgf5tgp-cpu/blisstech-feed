@@ -120,28 +120,14 @@ for offer in root.findall('.//offer'):
         else:
             parent_category = "Без категорії"
 
-        # акция
-        random_qty = random.randint(8, 20)
-
-        countdown_html = f"""
-<div style="max-width:320px;margin:10px auto 0;padding:10px 14px;font-family:'Rubik',Arial,sans-serif;background:rgba(254,155,54,0.08);border-radius:10px;display:inline-block;">
-<span style="font-size:14px;color:#444;">🔥 Залишилось товарів по акції:</span>
-<span style="font-size:20px;font-weight:700;color:#FE9B36;margin-left:6px;"> {random_qty} шт.</span>
-</div>
-"""
-
         product = {
             "article": sku,
-            "presence": presence,
-            "countdown_end_time": sale_date_str
+            "presence": presence
         }
 
-        # акция только если есть
+        # дата акции только для товаров в наличии
         if is_available:
-            product["countdown_description"] = {
-                "ua": countdown_html,
-                "ru": countdown_html
-            }
+            product["countdown_end_time"] = sale_date_str
 
         # 🆕 новые товары
         if is_new:
