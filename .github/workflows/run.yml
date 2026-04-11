@@ -2,7 +2,7 @@ name: Run script
 
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '*/5 * * * *'   # каждые 5 минут (для теста)
   workflow_dispatch:
 
 jobs:
@@ -22,4 +22,6 @@ jobs:
         env:
           LOGIN: ${{ secrets.LOGIN }}
           PASSWORD: ${{ secrets.PASSWORD }}
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: python feed_update.py
