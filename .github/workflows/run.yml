@@ -2,9 +2,9 @@ name: Run script
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '0 0 * * *'   # каждый день в 03:00 (лето)
   workflow_dispatch:
-  push:
+
 jobs:
   run-script:
     runs-on: ubuntu-latest
