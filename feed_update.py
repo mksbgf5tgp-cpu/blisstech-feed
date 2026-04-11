@@ -27,32 +27,6 @@ if not token:
 print("✅ Авторизация ок")
 
 # =========================
-# 📥 СУЩЕСТВУЮЩИЕ ТОВАРЫ
-# =========================
-existing_articles = set()
-page = 1
-
-while True:
-    response = requests.get(
-        "https://blisstech.shop/api/catalog/export/",
-        params={"token": token, "page": page}
-    )
-
-    data = response.json()
-    items = data.get("response", {}).get("items", [])
-
-    if not items:
-        break
-
-    for item in items:
-        if item.get("article"):
-            existing_articles.add(item["article"])
-
-    page += 1
-
-print(f"📦 Товаров найдено: {len(existing_articles)}")
-
-# =========================
 # 📅 ДАТА АКЦИИ (до завтра 02:55)
 # =========================
 now = datetime.now()
@@ -74,7 +48,7 @@ if response.status_code != 200:
 root = etree.fromstring(response.content)
 
 # =========================
-# 📦 ОБНОВЛЕНИЕ ТОЛЬКО НАЛИЧИЯ + ДАТЫ АКЦИИ
+# 📦 ОБНОВЛЕНИЕ ВСЕХ ТОВАРОВ
 # =========================
 products = []
 
@@ -87,11 +61,6 @@ for offer in root.findall('.//offer'):
             continue
 
         sku = sku.text.strip()
-
-        # только существующие товары
-        if sku not in existing_articles:
-            continue
-
         is_available = str(available).lower() == "true"
 
         product = {
@@ -99,7 +68,7 @@ for offer in root.findall('.//offer'):
             "presence": "В наявності" if is_available else "Немає в наявності"
         }
 
-        # дата/время акции только для наличия
+        # акция только для товаров в наличии
         if is_available:
             product["countdown_end_time"] = sale_date_str
 
@@ -108,7 +77,7 @@ for offer in root.findall('.//offer'):
     except Exception as e:
         print("Ошибка товара:", e)
 
-print(f"📦 К обновлению: {len(products)}")
+print(f"📦 Всего к обновлению: {len(products)}")
 
 # =========================
 # 🚀 ОТПРАВКА
