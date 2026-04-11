@@ -106,18 +106,18 @@ def apply_markup(price):
         return price
 
 # =========================
-# 🧠 HTML 1:1
+# 🧠 HTML 1:1 (FIX CDATA)
 # =========================
 def get_html_from_xml(node):
     if node is None:
         return ""
 
-    raw = etree.tostring(node, encoding="unicode", method="xml")
+    # 1) основной вариант (CDATA)
+    if node.text:
+        return node.text.strip()
 
-    start = raw.find(">") + 1
-    end = raw.rfind("</")
-
-    return raw[start:end].strip()
+    # 2) fallback на случай странного XML
+    return "".join(node.itertext()).strip()
 
 # =========================
 # 📦 ТОВАРЫ
