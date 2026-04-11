@@ -4,6 +4,12 @@ from datetime import datetime, timedelta
 import random
 import os
 import time
+import json
+
+# =========================
+# 📸 РЕЖИМ ФОТО
+# =========================
+include_images = input("📸 Отправлять изображения? (y/n): ").strip().lower() == "y"
 
 # =========================
 # 🔐 АВТОРИЗАЦИЯ
@@ -98,22 +104,19 @@ def apply_markup(price):
         return price
 
 # =========================
-# 🧠 1:1 HTML ИЗ XML (ГЛАВНЫЙ ФИКС)
+# 🧠 HTML 1:1
 # =========================
 def get_html_from_xml(node):
     if node is None:
         return ""
 
-    # берем ВСЁ содержимое тега включая CDATA как есть
     raw = etree.tostring(node, encoding="unicode", method="xml")
 
-    # вырезаем только сам контейнер <description>...</description>
     start = raw.find(">") + 1
     end = raw.rfind("</")
 
-    html = raw[start:end].strip()
+    return raw[start:end].strip()
 
-    return html
 # =========================
 # 📦 ТОВАРЫ
 # =========================
@@ -143,7 +146,6 @@ for offer in root.findall('.//offer'):
 
         parent_category = category_map.get(category_id.text, "Без категорії") if category_id is not None else "Без категорії"
 
-        # цена
         base_price = 0
         try:
             if price is not None and price.text:
@@ -165,9 +167,6 @@ for offer in root.findall('.//offer'):
         if is_available:
             product["countdown_end_time"] = sale_date_str
 
-        # =========================
-        # 🚀 ОСНОВНОЙ ФИКС (HTML 1:1)
-        # =========================
         if sku not in existing_articles:
             product.update({
                 "title": {
@@ -182,7 +181,11 @@ for offer in root.findall('.//offer'):
                 "currency": "UAH",
                 "parent": parent_category,
                 "images": {
-                    "links": [image.text.strip()] if image is not None and image.text else []
+                    "links": (
+                        [image.text.strip()]
+                        if include_images and image is not None and image.text
+                        else []
+                    )
                 }
             })
 
@@ -193,7 +196,6 @@ for offer in root.findall('.//offer'):
         continue
 
 print(f"📦 Всего товаров: {len(products)}")
-import json
 
 # =========================
 # 🚀 ОТПРАВКА
