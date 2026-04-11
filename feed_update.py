@@ -104,15 +104,11 @@ def get_html_from_xml(node):
     if node is None:
         return ""
 
-    # если есть вложенные элементы → сохраняем HTML структуру
-    if len(node):
-        return "".join(
-            etree.tostring(child, encoding="unicode", method="xml")
-            for child in node
-        ).strip()
+    # 🔥 берем HTML как есть (CDATA)
+    html = node.text or ""
 
-    # если просто текст
-    return node.text or ""
+    # минимальная чистка только краёв
+    return html.strip()
 
 # =========================
 # 📦 ТОВАРЫ
@@ -193,6 +189,7 @@ for offer in root.findall('.//offer'):
         continue
 
 print(f"📦 Всего товаров: {len(products)}")
+import json
 
 # =========================
 # 🚀 ОТПРАВКА
@@ -209,7 +206,12 @@ for i in range(0, len(products), BATCH_SIZE):
     }
 
     try:
-        response = requests.post(API_URL, json=payload, timeout=30)
+        response = requests.post(
+            API_URL,
+            data=json.dumps(payload, ensure_ascii=False),
+            headers={"Content-Type": "application/json"},
+            timeout=30
+        )
 
         print(f"📤 {i} - {i + len(batch)} | {response.status_code}")
 
