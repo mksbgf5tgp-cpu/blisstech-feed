@@ -5,13 +5,7 @@ import random
 import os
 import time
 import json
-
-# =========================
-# 📸 РЕЖИМ ФОТО (0 / 1)
-# =========================
-# 1 = отправлять картинки
-# 0 = НЕ отправлять картинки
-include_images = 1  # 👈 МЕНЯЕШЬ ТУТ
+import re
 
 # =========================
 # 🔐 АВТОРИЗАЦИЯ
@@ -106,18 +100,32 @@ def apply_markup(price):
         return price
 
 # =========================
-# 🧠 HTML 1:1 (FIX CDATA)
+# 🧠 ЧИСТКА HTML (ГЛАВНОЕ)
 # =========================
-def get_html_from_xml(node):
+def clean_html(node):
     if node is None:
         return ""
 
-    # 1) основной вариант (CDATA)
-    if node.text:
-        return node.text.strip()
+    html = node.text or "".join(node.itertext())
+    html = html.strip()
 
-    # 2) fallback на случай странного XML
-    return "".join(node.itertext()).strip()
+    # убираем CDATA мусор
+    html = html.replace("<![CDATA[", "").replace("]]>", "")
+
+    # убираем font/span/style мусор
+    html = re.sub(r'<span[^>]*>', '', html)
+    html = re.sub(r'</span>', '', html)
+    html = re.sub(r'<font[^>]*>', '', html)
+    html = re.sub(r'</font>', '', html)
+    html = re.sub(r'style="[^"]*"', '', html)
+
+    # фикс изображений
+    html = html.replace(
+        "<img",
+        '<img style="max-width:100%;height:auto;display:block;"'
+    )
+
+    return html
 
 # =========================
 # 📦 ТОВАРЫ
@@ -169,26 +177,31 @@ for offer in root.findall('.//offer'):
         if is_available:
             product["countdown_end_time"] = sale_date_str
 
+        # =========================
+        # ОБНОВЛЕНИЕ / НОВЫЙ ТОВАР
+        # =========================
         if sku not in existing_articles:
+
             product.update({
                 "title": {
                     "ua": name.text.strip(),
                     "ru": name.text.strip()
                 },
                 "description": {
-                    "ua": get_html_from_xml(description),
-                    "ru": get_html_from_xml(description)
+                    "ua": clean_html(description),
+                    "ru": clean_html(description)
                 },
                 "brand": brand.text if brand is not None and brand.text else "",
                 "currency": "UAH",
                 "parent": parent_category,
                 "images": {
-                    "links": (
-                        [image.text.strip()]
-                        if include_images and image is not None and image.text
-                        else []
-                    )
+                    "links": [image.text.strip()] if image is not None and image.text else []
                 }
+            })
+        else:
+            # 🔥 существующий товар → только апдейт статуса
+            product.update({
+                "countdown_end_time": sale_date_str
             })
 
         products.append(product)
