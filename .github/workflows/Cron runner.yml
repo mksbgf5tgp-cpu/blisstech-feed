@@ -1,4 +1,4 @@
-name: Cron runner
+name: Cron_runner
 on:
   schedule:
     - cron: '0 0 * * *'   # каждый день в 03:00 (лето)
