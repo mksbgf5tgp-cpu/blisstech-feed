@@ -104,12 +104,16 @@ def get_html_from_xml(node):
     if node is None:
         return ""
 
-    # 🔥 берем HTML как есть (CDATA)
-    html = node.text or ""
+    # берем ВСЁ содержимое тега включая CDATA как есть
+    raw = etree.tostring(node, encoding="unicode", method="xml")
 
-    # минимальная чистка только краёв
-    return html.strip()
+    # вырезаем только сам контейнер <description>...</description>
+    start = raw.find(">") + 1
+    end = raw.rfind("</")
 
+    html = raw[start:end].strip()
+
+    return html
 # =========================
 # 📦 ТОВАРЫ
 # =========================
