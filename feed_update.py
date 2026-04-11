@@ -183,14 +183,14 @@ for offer in root.findall('.//offer'):
         if sku not in existing_articles:
 
             product.update({
-                "title": {
-                    "ua": name.text.strip(),
-                    "ru": name.text.strip()
-                },
-                "description": {
-                    "ua": clean_html(description),
-                    "ru": clean_html(description)
-                },
+              "title": {
+    "ua": (offer.find('name_ua').text.strip() if offer.find('name_ua') is not None and offer.find('name_ua').text else name.text.strip()),
+    "ru": name.text.strip()
+},
+"description": {
+    "ua": (offer.find('description_ua').text.strip() if offer.find('description_ua') is not None and offer.find('description_ua').text else clean_html(description)),
+    "ru": clean_html(description)
+},
                 "brand": brand.text if brand is not None and brand.text else "",
                 "currency": "UAH",
                 "parent": parent_category,
