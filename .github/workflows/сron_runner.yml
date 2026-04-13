@@ -1,7 +1,7 @@
 name: сron_runner
 on:
   schedule:
-    - cron: '0 0 * * *'   # каждый день в 03:00 (лето)
+    - cron: '0 21 * * *'   
   workflow_dispatch:
 
 jobs:
