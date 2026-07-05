@@ -123,16 +123,16 @@ try:
 
             # Наценка по диапазонам
             if original_price <= 107:
-                final_price = original_price * 1.347
+                final_price = original_price * 1.4
 
             elif 107 < original_price <= 166:
-                final_price = original_price * 1.263
+                final_price = original_price * 1.3
 
             elif 166 < original_price <= 261:
-                final_price = original_price * 1.179
+                final_price = original_price * 1.2
 
             elif 261 < original_price <= 356:
-                final_price = original_price * 1.094
+                final_price = original_price * 1.1
 
             else:
                 # выше 356 грн — без наценки
