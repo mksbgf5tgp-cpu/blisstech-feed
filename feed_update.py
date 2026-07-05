@@ -82,7 +82,7 @@ try:
     # =========================
     # XML
     # =========================
-    url = "https://opt-drop.com/storage/xml/opt-drop-20.xml"
+    url = "https://opt-drop.com/storage/xml/opt-drop-24.xml"
 
     response = requests.get(url, timeout=60)
 
