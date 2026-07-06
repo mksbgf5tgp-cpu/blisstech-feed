@@ -82,7 +82,7 @@ try:
     # =========================
     # XML
     # =========================
-    url = "https://opt-drop.com/storage/xml/opt-drop-24.xml"
+    url = "https://opt-drop.com/storage/xml/opt-drop-20.xml"
 
     response = requests.get(url, timeout=60)
 
@@ -123,16 +123,16 @@ try:
 
             # Наценка по диапазонам
             if original_price <= 107:
-                final_price = original_price * 1.4
+                final_price = original_price * 1.45
 
             elif 107 < original_price <= 166:
-                final_price = original_price * 1.3
+                final_price = original_price * 1.35
 
             elif 166 < original_price <= 261:
-                final_price = original_price * 1.2
+                final_price = original_price * 1.25
 
             elif 261 < original_price <= 356:
-                final_price = original_price * 1.1
+                final_price = original_price * 1.15
 
             else:
                 # выше 356 грн — без наценки
